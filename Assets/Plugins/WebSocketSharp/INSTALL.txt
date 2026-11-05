@@ -1,0 +1,99 @@
+WEBSOCKETSHARP INSTALLATION GUIDE
+PediatricVR — Unity 6000.3.17f1
+================================
+
+WebSocketSharp is NOT on the Unity Package Manager.
+It must be manually added as a DLL. Follow these exact steps.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OPTION A — Prebuilt DLL (Recommended for MVP)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Go to the WebSocketSharp NuGet package page:
+   https://www.nuget.org/packages/WebSocketSharp-NonPreRelease
+
+2. Click "Download package" — you get a .nupkg file.
+
+3. Rename the .nupkg to .zip, then unzip it.
+   Inside, navigate to: lib/net45/websocket-sharp.dll
+
+4. Copy websocket-sharp.dll into:
+   Assets/Plugins/WebSocketSharp/websocket-sharp.dll
+
+5. In Unity Editor — click on the DLL in the Project window.
+   In Inspector, under "Plugin Inspector":
+     ✓ Any Platform: OFF
+     ✓ Editor: ON
+     ✓ Android (ARM64): ON
+   Click Apply.
+
+6. Unity will recompile. No errors = success.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OPTION B — Build from Source (Most Control)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Prerequisites: .NET SDK 6+ installed
+
+1. Clone the repo:
+   git clone https://github.com/sta/websocket-sharp.git
+
+2. Build:
+   cd websocket-sharp
+   dotnet build websocket-sharp.sln -c Release -f net45
+
+3. Copy the output DLL:
+   websocket-sharp/bin/Release/net45/websocket-sharp.dll
+   → Assets/Plugins/WebSocketSharp/websocket-sharp.dll
+
+4. Set platform flags as in Option A step 5.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IL2CPP STRIPPING — CRITICAL STEP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+IL2CPP (required for Quest builds) will strip WebSocketSharp types
+unless link.xml is present. This project includes:
+  Assets/Plugins/link.xml
+
+DO NOT DELETE IT. Without it, you will see:
+  "MissingMethodException: WebSocketSharp.Server.WebSocketServer"
+  at runtime on the Quest — silent failure, no Editor warning.
+
+After installing the DLL, verify link.xml references it:
+  <assembly fullname="websocket-sharp">
+    <type fullname="WebSocketSharp.*" preserve="all" />
+  </assembly>
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TESTING THE DLL IN EDITOR (Before Quest Build)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Press Play in Editor.
+2. Check Console for:
+   "[WSS] WebSocket server listening on ws://[YOUR-PC-IP]:8080/control"
+3. Open nurse-panel.html in Chrome on same machine.
+4. Enter your PC IP, click Connect.
+5. You should see "Connected" status.
+6. Click Start — check Console for "[GameManager] Session STARTED"
+
+The Editor test proves the logic. The Quest build proves the platform.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ALTERNATIVE IF WEBSOCKETSHARP FAILS ON QUEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If you get persistent runtime crashes with WebSocketSharp on ARM64 IL2CPP:
+
+Replace WebSocketServerManager.cs with an implementation using:
+  System.Net.WebSockets.HttpListener (built-in .NET)
+
+Known working alternative package (MIT licensed):
+  https://github.com/jilleJr/NaughtyWs  (server-capable, Unity tested)
+
+Or use HTTPS/WSS with a self-signed cert — avoids cleartext restrictions
+and is more appropriate for a hospital deployment long-term anyway.

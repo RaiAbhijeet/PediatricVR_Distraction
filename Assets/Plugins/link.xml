@@ -1,0 +1,67 @@
+<!--
+    PediatricVR — link.xml
+    
+    IL2CPP Managed Code Stripping Prevention.
+    
+    Without this file, Unity's IL2CPP build strips types it thinks are unused.
+    WebSocketSharp's server is instantiated via reflection internally, so the
+    linker cannot detect those types statically — they get stripped and you get
+    a runtime NullReferenceException or MissingMethodException on the Quest.
+    
+    System.Net types are also needed for our SimpleHTTPServer (TcpListener, etc.)
+    
+    Place at: Assets/Plugins/link.xml
+    Unity's managed linker reads this file automatically during IL2CPP builds.
+    
+    If you switch Managed Stripping Level to "Minimal" in Project Settings,
+    this file is less critical — but keep it for production builds using "High".
+-->
+<linker>
+
+    <!-- ═══════════════════════════════════════════════════════
+         WebSocketSharp — preserve all server and client types
+         The server uses reflection-based behavior instantiation
+    ═══════════════════════════════════════════════════════ -->
+    <assembly fullname="websocket-sharp">
+        <type fullname="WebSocketSharp.Server.WebSocketServer"    preserve="all" />
+        <type fullname="WebSocketSharp.Server.WebSocketBehavior"  preserve="all" />
+        <type fullname="WebSocketSharp.Server.WebSocketServiceManager" preserve="all" />
+        <type fullname="WebSocketSharp.Server.WebSocketSessionManager" preserve="all" />
+        <type fullname="WebSocketSharp.WebSocket"                 preserve="all" />
+        <type fullname="WebSocketSharp.MessageEventArgs"          preserve="all" />
+        <type fullname="WebSocketSharp.CloseEventArgs"            preserve="all" />
+        <type fullname="WebSocketSharp.ErrorEventArgs"            preserve="all" />
+        <type fullname="WebSocketSharp.Net.HttpListenerContext"   preserve="all" />
+        <type fullname="WebSocketSharp.*"                         preserve="all" />
+    </assembly>
+
+    <!-- ═══════════════════════════════════════════════════════
+         System — networking types for SimpleHTTPServer
+    ═══════════════════════════════════════════════════════ -->
+    <assembly fullname="System">
+        <type fullname="System.Net.Sockets.TcpListener"           preserve="all" />
+        <type fullname="System.Net.Sockets.TcpClient"             preserve="all" />
+        <type fullname="System.Net.Sockets.NetworkStream"         preserve="all" />
+        <type fullname="System.Net.Sockets.Socket"                preserve="all" />
+        <type fullname="System.Net.IPEndPoint"                    preserve="all" />
+        <type fullname="System.Net.IPAddress"                     preserve="all" />
+    </assembly>
+
+    <!-- ═══════════════════════════════════════════════════════
+         System.Core — LINQ and generic collections used internally
+    ═══════════════════════════════════════════════════════ -->
+    <assembly fullname="System.Core">
+        <type fullname="System.Collections.Generic.Queue`1"       preserve="all" />
+    </assembly>
+
+    <!-- ═══════════════════════════════════════════════════════
+         PediatricVR assembly — preserve our own behavior class
+         ControlBehavior is instantiated by WebSocketSharp reflection
+    ═══════════════════════════════════════════════════════ -->
+    <assembly fullname="Assembly-CSharp">
+        <type fullname="PediatricVR.ControlBehavior"              preserve="all" />
+        <type fullname="PediatricVR.NurseCommand"                 preserve="all" />
+        <type fullname="PediatricVR.ServerAck"                    preserve="all" />
+    </assembly>
+
+</linker>

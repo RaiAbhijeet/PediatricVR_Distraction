@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>PediatricVR — Nurse Panel</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:          #0d1117;
+    --surface:     #161b22;
+    --surface2:    #21262d;
+    --border:      #30363d;
+    --text:        #e6edf3;
+    --text-muted:  #7d8590;
+    --green:       #3fb950;
+    --green-dim:   #1a4d26;
+    --red:         #f85149;
+    --red-dim:     #4d1a1a;
+    --amber:       #d29922;
+    --blue:        #388bfd;
+    --blue-dim:    #1a3a6b;
+    --profile-a:   #58a6ff;
+    --profile-b:   #bc8cff;
+    --radius:      12px;
+    --radius-lg:   18px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── Layout ───────────────────────────────────── */
+  .app {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 14px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ───────────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .header-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .header-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .version-badge {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── Connection Card ──────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  /* Connection status indicator */
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--red);
+    flex-shrink: 0;
+    transition: background 0.3s ease;
+  }
+  .status-dot.connecting { background: var(--amber); animation: pulse 1s ease-in-out infinite; }
+  .status-dot.connected  { background: var(--green); }
+  .status-dot.error      { background: var(--red); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  .status-text {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  /* IP input row */
+  .ip-row {
+    display: flex;
+    gap: 8px;
+  }
+  .ip-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    padding: 10px 12px;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  .ip-input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(56,139,253,0.15);
+  }
+  .ip-input::placeholder { color: var(--text-muted); }
+
+  .connect-btn {
+    background: var(--blue-dim);
+    color: var(--blue);
+    border: 1px solid var(--blue);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+  .connect-btn:active { background: #2a4f8f; }
+
+  .hint-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  /* ── Profile Selector ─────────────────────────── */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .profile-btn {
+    position: relative;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 14px;
+    cursor: pointer;
+    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+  .profile-btn:active { transform: scale(0.97); }
+
+  .profile-btn.selected-a {
+    border-color: var(--profile-a);
+    background: rgba(88,166,255,0.08);
+  }
+  .profile-btn.selected-b {
+    border-color: var(--profile-b);
+    background: rgba(188,140,255,0.08);
+  }
+
+  .profile-letter {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .profile-btn:nth-child(1) .profile-letter { color: var(--profile-a); }
+  .profile-btn:nth-child(2) .profile-letter { color: var(--profile-b); }
+
+  .profile-age {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .profile-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .selected-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+  }
+  .selected-a .selected-indicator { background: var(--profile-a); color: #000; }
+  .selected-b .selected-indicator { background: var(--profile-b); color: #000; }
+
+  /* ── Session Timer ────────────────────────────── */
+  .timer-display {
+    text-align: center;
+    padding: 14px;
+    background: var(--surface2);
+    border-radius: 10px;
+    margin-bottom: 0;
+  }
+  .timer-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+  }
+  .timer-value {
+    font-size: 36px;
+    font-weight: 700;
+    font-family: "SF Mono", "Fira Code", monospace;
+    color: var(--text);
+    letter-spacing: 2px;
+    transition: color 0.3s;
+  }
+  .timer-value.active { color: var(--green); }
+  .timer-value.warning { color: var(--amber); }
+
+  /* ── Control Buttons ──────────────────────────── */
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn {
+    width: 100%;
+    border-radius: var(--radius);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    padding: 20px;
+    cursor: pointer;
+    border: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.08s, opacity 0.15s;
+    user-select: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .btn-start {
+    background: var(--green);
+    color: #000;
+    box-shadow: 0 4px 20px rgba(63,185,80,0.3);
+  }
+  .btn-start:not(:disabled):active { background: #2ea043; }
+
+  .btn-stop {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1.5px solid var(--red);
+  }
+  .btn-stop:not(:disabled):active { background: #6b2020; }
+
+  .btn-reset {
+    background: var(--surface2);
+    color: var(--text-muted);
+    border: 1.5px solid var(--border);
+    font-size: 15px;
+    padding: 14px;
+  }
+  .btn-reset:not(:disabled):active { background: #30363d; }
+
+  /* ── Log ──────────────────────────────────────── */
+  .log-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+  .log-item {
+    font-size: 12px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    color: var(--text-muted);
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+    line-height: 1.4;
+  }
+  .log-item.ok     { color: var(--green); }
+  .log-item.error  { color: var(--red); }
+  .log-item.info   { color: var(--blue); }
+
+  /* ── Disabled overlay ─────────────────────────── */
+  .disabled-overlay {
+    opacity: 0.4;
+    pointer-events: none;
+    filter: grayscale(0.5);
+    transition: opacity 0.3s;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="header-title">🏥 Nurse Control Panel</div>
+      <div class="header-sub">PediatricVR Distraction System</div>
+    </div>
+    <div class="version-badge">v1.0</div>
+  </div>
+
+  <!-- Connection -->
+  <div class="card">
+    <div class="card-title">Quest Connection</div>
+    <div class="status-row">
+      <div class="status-dot" id="statusDot"></div>
+      <div class="status-text" id="statusText">Not connected</div>
+    </div>
+    <div class="ip-row">
+      <input
+        class="ip-input"
+        type="text"
+        id="ipInput"
+        placeholder="192.168.1.xx"
+        inputmode="decimal"
+        autocomplete="off"
+        spellcheck="false"
+        value="__QUEST_IP_PLACEHOLDER__"
+      />
+      <button class="connect-btn" id="connectBtn" onclick="toggleConnection()">Connect</button>
+    </div>
+    <div class="hint-text" id="hintText">
+      Enter the Quest IP shown on the headset idle screen, then tap Connect.
+    </div>
+  </div>
+
+  <!-- Rest of controls — disabled until connected -->
+  <div id="mainControls" class="disabled-overlay">
+
+    <!-- Age Profile -->
+    <div class="card">
+      <div class="card-title">Age Profile</div>
+      <div class="profile-grid">
+        <div class="profile-btn" id="profileA" onclick="selectProfile('A')">
+          <div class="selected-indicator" id="indicatorA"></div>
+          <div class="profile-letter">A</div>
+          <div class="profile-age">Ages 5–7</div>
+          <div class="profile-desc">Fully passive<br>No child input needed</div>
+        </div>
+        <div class="profile-btn" id="profileB" onclick="selectProfile('B')">
+          <div class="selected-indicator" id="indicatorB"></div>
+          <div class="profile-letter">B</div>
+          <div class="profile-age">Ages 8–10</div>
+          <div class="profile-desc">Head steering<br>Light interaction</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Timer -->
+    <div class="card">
+      <div class="card-title">Session Timer</div>
+      <div class="timer-display">
+        <div class="timer-label">Duration</div>
+        <div class="timer-value" id="timerValue">00:00</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn btn-start" id="btnStart" onclick="sendStart()">
+        ▶ START SESSION
+      </button>
+      <button class="btn btn-stop" id="btnStop" onclick="sendStop()" disabled>
+        ■ STOP SESSION
+      </button>
+      <button class="btn btn-reset" id="btnReset" onclick="sendReset()">
+        ↺ Reset to Idle
+      </button>
+    </div>
+
+  </div><!-- end mainControls -->
+
+  <!-- Log -->
+  <div class="card">
+    <div class="card-title">Command Log</div>
+    <ul class="log-list" id="logList">
+      <li class="log-item">Ready — connect to Quest to begin.</li>
+    </ul>
+  </div>
+
+</div><!-- end app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// PediatricVR — Nurse Panel WebSocket Client
+// ═══════════════════════════════════════════════════════════
+
+const WS_PORT   = 8080;
+const WS_PATH   = '/control';
+const PING_INTERVAL_MS = 10000;  // keepalive ping every 10s
+
+let ws            = null;
+let selectedProfile = 'A';
+let sessionActive   = false;
+let sessionSeconds  = 0;
+let timerInterval   = null;
+let pingInterval    = null;
+let reconnectTimeout = null;
+let isConnected     = false;
+
+// ── On load: try pre-filled IP if placeholder was replaced ──
+window.addEventListener('DOMContentLoaded', () => {
+  const ipInput = document.getElementById('ipInput');
+  const val = ipInput.value.trim();
+  // If the server injected a real IP (not the placeholder string), auto-connect
+  if (val && val !== '__QUEST_IP_PLACEHOLDER__' && val !== '127.0.0.1') {
+    setTimeout(() => connect(val), 500);
+  } else {
+    ipInput.value = '';
+  }
+  selectProfile('A'); // default selection
+});
+
+// ── Connection Management ────────────────────────────────────
+
+function toggleConnection() {
+  if (isConnected) {
+    disconnect();
+  } else {
+    const ip = document.getElementById('ipInput').value.trim();
+    if (!ip) { log('Enter the Quest IP address first.', 'error'); return; }
+    connect(ip);
+  }
+}
+
+function connect(ip) {
+  if (ws && ws.readyState === WebSocket.OPEN) { disconnect(); return; }
+
+  const url = `ws://${ip}:${WS_PORT}${WS_PATH}`;
+  log(`Connecting to ${url}…`, 'info');
+  setStatus('connecting', 'Connecting…');
+  document.getElementById('connectBtn').textContent = 'Cancel';
+
+  try {
+    ws = new WebSocket(url);
+  } catch(e) {
+    log(`Failed to create WebSocket: ${e.message}`, 'error');
+    setStatus('error', 'Connection failed');
+    return;
+  }
+
+  ws.onopen = () => {
+    isConnected = true;
+    setStatus('connected', `Connected — ${ip}`);
+    document.getElementById('connectBtn').textContent = 'Disconnect';
+    document.getElementById('mainControls').classList.remove('disabled-overlay');
+    document.getElementById('hintText').textContent = 'Quest is ready. Select age profile and press START.';
+    log(`Connected to Quest at ${ip}`, 'ok');
+    startPing();
+  };
+
+  ws.onmessage = (evt) => {
+    handleServerMessage(evt.data);
+  };
+
+  ws.onclose = (evt) => {
+    handleDisconnect(`Disconnected (code ${evt.code})`);
+  };
+
+  ws.onerror = () => {
+    handleDisconnect('Connection error — check Quest is on same WiFi.');
+  };
+}
+
+function disconnect() {
+  clearInterval(pingInterval);
+  if (ws) { ws.close(); ws = null; }
+  handleDisconnect('Disconnected by nurse.');
+}
+
+function handleDisconnect(reason) {
+  isConnected = false;
+  ws = null;
+  setStatus('error', reason);
+  document.getElementById('connectBtn').textContent = 'Connect';
+  document.getElementById('mainControls').classList.add('disabled-overlay');
+  log(reason, 'error');
+  clearInterval(pingInterval);
+
+  // If session was active, stop timer
+  if (sessionActive) endSession();
+}
+
+// ── Message Handling ─────────────────────────────────────────
+
+function handleServerMessage(raw) {
+  try {
+    const msg = JSON.parse(raw);
+
+    if (msg.status === 'connected') {
+      log(`Quest ACK — app v${msg.version}`, 'ok');
+    } else if (msg.status === 'received') {
+      // Command acknowledged — no action needed
+    } else if (msg.status === 'ok') {
+      log(`Quest: command executed — ${msg.cmd}`, 'ok');
+    } else if (msg.status === 'error') {
+      log(`Quest error: ${msg.msg}`, 'error');
+    }
+  } catch(e) {
+    // Non-JSON message — log raw
+    log(`Quest: ${raw}`, 'info');
+  }
+}
+
+// ── Commands ─────────────────────────────────────────────────
+
+function send(cmd) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    log('Not connected — cannot send command.', 'error');
+    return false;
+  }
+  ws.send(JSON.stringify(cmd));
+  return true;
+}
+
+function sendStart() {
+  if (!selectedProfile) { log('Select a profile first (A or B).', 'error'); return; }
+
+  const ok = send({ cmd: 'start', profile: selectedProfile });
+  if (!ok) return;
+
+  log(`START sent — Profile ${selectedProfile}`, 'ok');
+  startSession();
+}
+
+function sendStop() {
+  const ok = send({ cmd: 'stop' });
+  if (!ok) return;
+  log('STOP sent', 'ok');
+  endSession();
+}
+
+function sendReset() {
+  const ok = send({ cmd: 'reset' });
+  if (!ok) return;
+  log('RESET sent', 'info');
+  endSession();
+}
+
+// ── Session State ─────────────────────────────────────────────
+
+function startSession() {
+  sessionActive  = true;
+  sessionSeconds = 0;
+
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnStop').disabled  = false;
+  updateTimerDisplay();
+
+  timerInterval = setInterval(() => {
+    sessionSeconds++;
+    updateTimerDisplay();
+
+    // Warn at 12 min (80% of 15 min max)
+    if (sessionSeconds === 720) {
+      log('⚠ 12 min elapsed — session will auto-stop at 15 min on Quest.', 'info');
+    }
+  }, 1000);
+}
+
+function endSession() {
+  sessionActive = false;
+  clearInterval(timerInterval);
+  timerInterval = null;
+
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnStop').disabled  = true;
+
+  const timerEl = document.getElementById('timerValue');
+  timerEl.classList.remove('active', 'warning');
+}
+
+function updateTimerDisplay() {
+  const mins = Math.floor(sessionSeconds / 60).toString().padStart(2, '0');
+  const secs = (sessionSeconds % 60).toString().padStart(2, '0');
+  const timerEl = document.getElementById('timerValue');
+  timerEl.textContent = `${mins}:${secs}`;
+
+  // Colour coding
+  timerEl.classList.toggle('active',  sessionSeconds > 0 && sessionSeconds < 720);
+  timerEl.classList.toggle('warning', sessionSeconds >= 720);
+}
+
+// ── Profile Selection ─────────────────────────────────────────
+
+function selectProfile(profile) {
+  selectedProfile = profile;
+
+  const btnA = document.getElementById('profileA');
+  const btnB = document.getElementById('profileB');
+  const indA = document.getElementById('indicatorA');
+  const indB = document.getElementById('indicatorB');
+
+  btnA.classList.toggle('selected-a', profile === 'A');
+  btnB.classList.toggle('selected-b', profile === 'B');
+  indA.textContent = profile === 'A' ? '✓' : '';
+  indB.textContent = profile === 'B' ? '✓' : '';
+
+  log(`Profile ${profile} selected (${profile === 'A' ? '5–7 yrs, passive' : '8–10 yrs, interactive'})`, 'info');
+}
+
+// ── Status Indicator ──────────────────────────────────────────
+
+function setStatus(type, message) {
+  const dot  = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+
+  dot.className  = `status-dot ${type}`;
+  text.textContent = message;
+}
+
+// ── Ping / Keepalive ──────────────────────────────────────────
+
+function startPing() {
+  clearInterval(pingInterval);
+  pingInterval = setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      send({ cmd: 'ping' });
+    }
+  }, PING_INTERVAL_MS);
+}
+
+// ── Log ───────────────────────────────────────────────────────
+
+function log(message, type = '') {
+  const list = document.getElementById('logList');
+  const li   = document.createElement('li');
+  const time = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  li.className   = `log-item ${type}`;
+  li.textContent = `${time}  ${message}`;
+
+  list.insertBefore(li, list.firstChild); // newest at top
+
+  // Keep log bounded
+  while (list.children.length > 20) list.removeChild(list.lastChild);
+}
+
+// ── Keyboard shortcut (for testing at desk) ──────────────────
+document.addEventListener('keydown', (e) => {
+  if (e.key === 's' && !e.ctrlKey) { if (!document.getElementById('btnStart').disabled) sendStart(); }
+  if (e.key === 'x')               { if (!document.getElementById('btnStop').disabled)  sendStop(); }
+  if (e.key === 'r')               { sendReset(); }
+});
+</script>
+</body>
+</html>

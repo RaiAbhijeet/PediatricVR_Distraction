@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Explicit AppCompat theme for UnityPlayerGameActivity (Unity 6).
+        UnityThemeSelector sometimes fails to resolve in builds that include
+        both Meta XR SDK and OpenXR. This theme is equivalent but explicit.
+    -->
+    <style name="PediatricVRActivityTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>
